@@ -1,0 +1,14 @@
+{
+    "FACTORFABLE": {
+        "name": "FACT OR FABLE",
+        "process": "factOrFable",
+        "minPlayers": 2,
+        "maxPlayers": 10
+    },
+    "MINPLUS": {
+        "name": "MIN PLUS",
+        "process": "minPlus",
+        "minPlayers": 2,
+        "maxPlayers": 10
+    }
+}
