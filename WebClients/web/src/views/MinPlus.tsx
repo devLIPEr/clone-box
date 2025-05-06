@@ -233,4 +233,4 @@ const MinPlus: Component = () => {
     );
 }
 
-export default MinPlus
+export default MinPlus;

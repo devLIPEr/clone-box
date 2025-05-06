@@ -1,6 +1,6 @@
 ## What you will use
 
-This Single Page App is built using [SolidJS](https://docs.solidjs.com/) as the JavaScript/TypeScript framework and [tailwindcss](https://tailwindcss.com/docs/installation/using-vite) to style the UI.
+This Single Page App is built using [SolidJS](https://docs.solidjs.com/) as the JavaScript/TypeScript framework and [Tailwind CSS](https://tailwindcss.com/docs/installation/using-vite) to style the UI.
 
 ## Usage
 
@@ -11,8 +11,6 @@ This is the reason you see a `pnpm-lock.yaml`. That being said, any package mana
 ```bash
 $ npm install # or pnpm install or yarn install
 ```
-
-### Learn more on the [Solid Website](https://solidjs.com) and come chat with us on our [Discord](https://discord.com/invite/solidjs)
 
 ## Available Scripts
 

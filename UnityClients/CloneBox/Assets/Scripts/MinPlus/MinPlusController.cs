@@ -24,7 +24,7 @@ public class MinPlusController : GameController
 
     [SerializeField]
     private GameObject waitPlayPage;
-    
+
     [SerializeField]
     private GameObject cardsWait;
     [SerializeField]
@@ -48,16 +48,19 @@ public class MinPlusController : GameController
     [SerializeField]
     private GameObject pointsPage;
 
+    [SerializeField]
+    private GameObject exitPage;
+
 
     // Game Timers
     [SerializeField]
     private float waitTimer = 60.0f;
     private float resetWaitTimer;
-    
+
     [SerializeField]
     private float playTimer = 30.0f;
     private float resetPlayTimer;
-    
+
     [SerializeField]
     private float pointTimer = 15.0f;
     private float resetPointTimer;
@@ -85,10 +88,12 @@ public class MinPlusController : GameController
     Sprite[] sprites;
 
 
-    public struct Point{
+    public struct Point
+    {
         public string id;
         public int points;
-        public Point(string id, int points){
+        public Point(string id, int points)
+        {
             this.id = id;
             this.points = points;
         }
@@ -125,20 +130,27 @@ public class MinPlusController : GameController
 
         UnityWebRequestAsyncOperation operation = req.SendWebRequest();
 
-        while(!operation.isDone){}
+        while (!operation.isDone) { }
 
         if(req.result == UnityWebRequest.Result.ConnectionError){
             Debug.Log("Error while sending: " + req.error);
+            connectionTimer.text = "Não foi possível conectar.";
+            exitPage.SetActive(true);
         }else{
             room = GameRoom.CreateFromJSON(req.downloadHandler.text);
 
             await createWS(String.Format("wss://{0}:{1}/unity", room._ip, room._port), wsDelegate);
         }
+
+        exitPage.GetComponent<Button>().onClick.AddListener(Exit);
     }
 
     // Update is called once per frame
-    void Update()
+    async void Update()
     {
+        if(Input.GetKeyDown(KeyCode.Escape)){
+            exitPage.SetActive(!exitPage.activeSelf);
+        }
         #if !UNITY_WEBGL || UNITY_EDITOR
             if(ws != null){
                 ws.DispatchMessageQueue();
@@ -192,8 +204,8 @@ public class MinPlusController : GameController
                         currentRound++;
                         if(currentRound == 7){
                             gameState &= ~MinPlusState.Started;
-                            SendWSMessage("6");
-                            finished = true;
+                            await Quit();
+                            exitPage.SetActive(true);
                         }else{
                             ResetPointsPage();
                         }
@@ -213,7 +225,8 @@ public class MinPlusController : GameController
         }
     }
 
-    void ResetWaiting() {
+    void ResetWaiting()
+    {
         waitTimer = resetWaitTimer;
         gameState &= ~MinPlusState.Waiting;
         gameState |= MinPlusState.Playing;
@@ -224,7 +237,8 @@ public class MinPlusController : GameController
         SendWSMessage("1hands");
     }
 
-    void ResetPlaying() {
+    void ResetPlaying()
+    {
         playTimer = resetPlayTimer;
         gameState &= ~MinPlusState.Playing;
         gameState |= MinPlusState.Points;
@@ -234,25 +248,39 @@ public class MinPlusController : GameController
         SendWSMessage("4");
     }
 
-    void ResetPointsPage() {
+    void ResetPointsPage()
+    {
         pointTimer = resetPointTimer;
         gameState &= ~MinPlusState.Points;
         gameState |= MinPlusState.Waiting;
         pointsPage.SetActive(false);
         waitPlayPage.SetActive(true);
     }
-    
+
+    private async Task Quit()
+    {
+        if(room != null){
+            UnityWebRequest req = new UnityWebRequest(String.Format("{0}:{1}/room/{2}/end", DotEnv.serverIp, DotEnv.serverPort, room._code), "GET");
+
+            UnityWebRequestAsyncOperation operation = req.SendWebRequest();
+
+            while (!operation.isDone) { }
+            SendWSMessage("6");
+            if(ws != null){
+                await ws.Close();
+            }
+        }
+    }
+
+    private async void Exit()
+    {
+        await Quit();
+        exitPage.GetComponent<ExitGame>().Exit();
+    }
+
     private async void OnApplicationQuit()
     {
-        UnityWebRequest req = new UnityWebRequest(String.Format("{0}:{1}/room/{2}/end", DotEnv.serverIp, DotEnv.serverPort, room._code), "GET");
-
-        UnityWebRequestAsyncOperation operation = req.SendWebRequest();
-
-        while(!operation.isDone){}
-        SendWSMessage("6");
-        if(ws != null){
-            await ws.Close();
-        }
+        await Quit();
     }
 
     /*
@@ -263,7 +291,8 @@ public class MinPlusController : GameController
 		4 - finished
 		5 - ping
     */
-    void WSCommunication(byte[] bytes) {
+    void WSCommunication(byte[] bytes)
+    {
         var msg = System.Text.Encoding.UTF8.GetString(bytes);
         Debug.Log(msg);
         string[] command = new string[3];
@@ -287,7 +316,7 @@ public class MinPlusController : GameController
 
                 UnityWebRequestAsyncOperation operation = req.SendWebRequest();
 
-                while(!operation.isDone){}
+                while (!operation.isDone) { }
                 room._started = true;
                 break;
             case "1":
@@ -295,8 +324,8 @@ public class MinPlusController : GameController
                 cardsPlayed = JsonConvert.DeserializeObject<Dictionary<string, string>>(command[1]);
                 break;
             case "2":
-                command[1] = msg.Substring(1, msg.Length-2);
-                command[2] = msg.Substring(msg.Length-1);
+                command[1] = msg.Substring(1, msg.Length - 2);
+                command[2] = msg.Substring(msg.Length - 1);
                 Debug.Log(command[1]);
                 Debug.Log(command[2]);
                 Debug.Log(usersPos.Count);
@@ -304,7 +333,7 @@ public class MinPlusController : GameController
                     picturesIndex--;
                     users[command[2]] = new GameUser(command[2], command[1], pictures[picturesIndex]);
                     playOrder.Add(command[2]);
-                
+
                     GameObject user = Instantiate(userLoginPrefab, usersPos[9-picturesIndex]) as GameObject;
                     Debug.Log(user.name);
                     int userIdx = int.Parse(pictures[picturesIndex].Split('_')[1]);
@@ -322,7 +351,7 @@ public class MinPlusController : GameController
             case "3":
                 command[1] = msg.Substring(1);
                 points = JsonConvert.DeserializeObject<Dictionary<string, int>>(command[1]);
-                
+
                 int min = points["0"];
                 int max = points["0"];
                 int range = 0;
@@ -340,7 +369,7 @@ public class MinPlusController : GameController
                 List<Point> pointsList = new List<Point>();
                 Dictionary<string, float> normalizedPoints = new Dictionary<string, float>();
                 foreach(KeyValuePair<string, int> pointPair in points){
-                    normalizedPoints[pointPair.Key] = (range > 0) ? (pointPair.Value)/(float)range : (pointPair.Value);
+                    normalizedPoints[pointPair.Key] = (range > 0) ? (pointPair.Value) / (float)range : (pointPair.Value);
                     normalizedPoints[pointPair.Key] *= 20;
                     pointsList.Add(new Point(pointPair.Key, pointPair.Value));
                 }
@@ -362,7 +391,7 @@ public class MinPlusController : GameController
                 foreach(KeyValuePair<string, GameUser> userPair in users){
                     GameUser user = userPair.Value;
                     GameObject userObj = Instantiate(userPointPrefab, pointsPage.transform) as GameObject;
-                    
+
                     int userIdx = int.Parse(user.picture.Split('_')[1]);
                     Sprite sprite = sprites[userIdx];
                     userObj.transform.GetChild(0).gameObject.GetComponent<RawImage>().texture = sprite.texture;
@@ -373,7 +402,7 @@ public class MinPlusController : GameController
                         sprite.textureRect.height / sprite.texture.height
                     );
                     userObj.transform.GetChild(1).gameObject.GetComponent<TMP_Text>().text = user.username;
-                    
+
                     for(int i = 0; i < normalizedPoints[user.id]; i++){
                         Instantiate(cardPrefab, userObj.transform.GetChild(2).transform);
                     }

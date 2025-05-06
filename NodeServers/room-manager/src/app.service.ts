@@ -1,8 +1,9 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { exec } from 'child_process';
 import RoomResponseDTO from './DTO/roomResponse.dto';
-import { Game } from './Games/game';
+import { Game, loadGames, reloadGames } from './Games/game';
 import { HttpService } from '@nestjs/axios';
+import { rejects } from 'assert';
 const path = require('path');
 require("dotenv").config();
 
@@ -15,6 +16,17 @@ export class AppService {
   private maxGames = this.maxPort-this.startingPort;
   private ports = new Array(this.maxPort).fill(false);
   private httpService: HttpService = new HttpService();
+
+  constructor(){
+    reloadGames();
+    loadGames();
+  }
+
+  countRooms(): Promise<number> {
+    return new Promise<number>((resolve, reject) => {
+      resolve(Object.keys(this.games).length)
+    });
+  }
 
   getRoom(code: string): Promise<RoomResponseDTO> {
     return new Promise<RoomResponseDTO>((resolve, reject) => {
@@ -103,9 +115,5 @@ export class AppService {
         reject(new HttpException("Room does not exist", HttpStatus.BAD_REQUEST));
       }
     });
-  }
-
-  reloadGames(){
-
   }
 }

@@ -1,18 +1,18 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import RoomResponseDTO from './DTO/roomResponse.dto';
-import { loadServers, Server, serversHeap } from './Entities/Servers/server';
+import { reloadServers, loadServers, Server, serversHeap, gameCount, modifyGameCount } from './Entities/Servers/server';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom  } from 'rxjs';
 
 @Injectable()
 export class AppService {
   private games = {};
-  private gameCount: number = 0;
   private letters: string = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   private httpService: HttpService = new HttpService();
   private maxGames: number = Math.pow(26, 4);
 
   constructor(){
+    reloadServers();
     loadServers();
   }
 
@@ -53,7 +53,7 @@ export class AppService {
           this.fixHeap();
           delete this.games[code];
           resolve(true);
-          this.gameCount--;
+          modifyGameCount(-1);
         }else{
           reject(new HttpException("Requisition made by someone else other than the server.", HttpStatus.FORBIDDEN));
         }
@@ -72,7 +72,7 @@ export class AppService {
   async allocateRoom(game: string): Promise<RoomResponseDTO> {
     try{
       let leastUsedServer: Server = serversHeap.pop()!;
-      if(this.gameCount >= this.maxGames){
+      if(gameCount >= this.maxGames){
         return new Promise<RoomResponseDTO>((resolve, reject) => {
           reject(new HttpException("No more room to allocate games, try again later", HttpStatus.INTERNAL_SERVER_ERROR));
         })
@@ -94,7 +94,7 @@ export class AppService {
       
       let room = response.data;
       this.games[room._code] = {"room": room, "server": leastUsedServer};
-      this.gameCount++;
+      modifyGameCount(1);
 
       return new Promise<RoomResponseDTO>((resolve, reject) => {
         resolve(room);

@@ -1,15 +1,23 @@
 import { Body, Controller, Get, Param, Post, Req, Res } from '@nestjs/common';
 import { AppService } from './app.service';
 import RoomRequestDTO from './DTO/roomRequest.dto';
-import { games, loadGames, reloadGames } from './Games/game';
+import { games } from './Games/game';
 import JoinRequestDTO from './DTO/joinRequest.dto';
 import { Response } from 'express';
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {
-    reloadGames();
-    loadGames();
+  constructor(private readonly appService: AppService) {}
+
+  @Get("/rooms")
+  getRoomsCount(@Res() res){
+    return this.appService.countRooms()
+    .then((rooms) => {
+      res.send({"rooms": rooms});
+    })
+    .catch((err) => {
+      res.status(err.status).send({error: err.response});
+    });
   }
 
   @Get("/room/:code")

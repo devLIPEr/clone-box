@@ -15,13 +15,13 @@ public class GameController : MonoBehaviour
     [SerializeField]
     protected GameObject connectPage;
 
-
     [SerializeField]
     protected GameObject loginPage;
     [SerializeField]
     protected RawImage QRCodeImg;
     [SerializeField]
     protected GameObject codeText;
+
 
     // User variables
     protected string[] pictures = new string[10];
@@ -46,6 +46,7 @@ public class GameController : MonoBehaviour
             (pictures[n], pictures[k]) = (pictures[k], pictures[n]);
         }
     }
+
     protected async Task<WebSocket> createWS(string url, WSDelegate onMessage){
         Debug.Log(url);
         // setup websocket with _ip, _port

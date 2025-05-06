@@ -20,6 +20,6 @@ You will have to create a new scene and add the UI components from Unity, or dup
 
 After the scene is created you will need to create a Controller for your game, this extends the "GameController.cs" and is responsible of maintaining the pace of the game using timers for each interface and update the state of the game via websocket.
 
-In case you need more than 10 players in your game, update the pictures variable to a new size and add images to the "UserIcons.png".
+In case you need more than 10 players in your game, update the pictures variable to a new size and add images to the "UserIcons.png", or create a new file and modify the code to load from it.
 
 After your game is done you will need to add a "GameOption.prefab" to the main scene, set its background image, name and its click function with the GoToScene from "GameChoose.cs".

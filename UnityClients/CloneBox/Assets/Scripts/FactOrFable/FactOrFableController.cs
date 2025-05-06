@@ -39,6 +39,9 @@ public class FactOrFableController : GameController
     private GameObject pointsPage;
     [SerializeField]
     private GameObject pointsUsers;
+
+    [SerializeField]
+    private GameObject exitPage;
     
     // Game timers
     [SerializeField]
@@ -61,10 +64,12 @@ public class FactOrFableController : GameController
 
     // User variables
     private Dictionary<string, GameUser> users = new Dictionary<string, GameUser>();
+    Sprite[] sprites;
 
     // Start is called before the first frame update
     async void Start()
     {
+        sprites = Resources.LoadAll<Sprite>("Sprites/UserIcons");
         wsDelegate = WSCommunication;
         resetWriteTime = writeTime;
         resetVoteTime = voteTime;
@@ -87,16 +92,23 @@ public class FactOrFableController : GameController
 
         if(req.result == UnityWebRequest.Result.ConnectionError){
             Debug.Log("Error while sending: " + req.error);
+            connectPage.transform.GetChild(0).GetComponent<TMP_Text>().text = "Não foi possível conectar.";
+            exitPage.SetActive(true);
         }else{
             room = GameRoom.CreateFromJSON(req.downloadHandler.text);
 
-            ws = await createWS(String.Format("wss://{0}:{1}/unity", room._ip, room._port), wsDelegate);
+            await createWS(String.Format("wss://{0}:{1}/unity", room._ip, room._port), wsDelegate);
         }
+
+        exitPage.GetComponent<Button>().onClick.AddListener(Exit);
     }
 
     // Update is called once per frame
-    void Update()
+    async Task Update()
     {
+        if(Input.GetKeyDown(KeyCode.Escape)){
+            exitPage.SetActive(!exitPage.activeSelf);
+        }
         #if !UNITY_WEBGL || UNITY_EDITOR
             if(ws != null){
                 ws.DispatchMessageQueue();
@@ -149,6 +161,8 @@ public class FactOrFableController : GameController
                 if(pointTime <= 0){
                     if(currentRound == 3){
                         gameState &= ~FactOrFableState.Started; // end game
+                        await Quit();
+                        exitPage.SetActive(true);
                     }
                     NextRound();
                 }
@@ -156,12 +170,30 @@ public class FactOrFableController : GameController
         }
     }
 
+    private async Task Quit()
+    {
+        if(room != null){
+            UnityWebRequest req = new UnityWebRequest(String.Format("{0}:{1}/room/{2}/end", DotEnv.serverIp, DotEnv.serverPort, room._code), "GET");
+
+            UnityWebRequestAsyncOperation operation = req.SendWebRequest();
+
+            while (!operation.isDone) { }
+            SendWSMessage("8");
+            if(ws != null){
+                await ws.Close();
+            }
+        }
+    }
+
+    private async void Exit()
+    {
+        await Quit();
+        exitPage.GetComponent<ExitGame>().Exit();
+    }
+
     private async void OnApplicationQuit()
     {
-        SendWSMessage("8");
-        if(ws != null){
-            await ws.Close();
-        }
+        await Quit();
     }
 
     void ResetWriting(){
@@ -285,7 +317,7 @@ public class FactOrFableController : GameController
                         GameObject userObj = Instantiate(userPointPrefab, pointsUsers.transform) as GameObject;
                         
                         int userIdx = int.Parse(user.picture.Split('_')[1]);
-                        Sprite sprite = Resources.LoadAll<Sprite>("Sprites/UserIcons")[userIdx];
+                        Sprite sprite = sprites[userIdx];
                         userObj.transform.GetChild(0).gameObject.GetComponent<RawImage>().texture = sprite.texture;
                         userObj.transform.GetChild(0).gameObject.GetComponent<RawImage>().uvRect = new Rect(
                             sprite.textureRect.x / sprite.texture.width,

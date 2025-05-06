@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
+  <a href="https://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
 </p>
 
 <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
@@ -34,7 +34,7 @@ For this server to know which are the room servers it can communicate with, you 
 }
 ```
 
-If you make any changes in this json you **NEED** to restart this server, as the changes only apply on startup.
+You can make this change in the dist folder without having to restart the server, this will trigger the file watcher and update the servers list, asking each room manager how many games there is active, without having to restart the server.
 
 ```bash
 $ npm install
