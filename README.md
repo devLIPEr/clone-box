@@ -11,7 +11,10 @@
 </p
 
 <p align="center">
-	Made using:</br>
+	Made using:
+</p>
+
+<p align="center">
 	<a href="https://www.typescriptlang.org/" target="blank"><img src="https://www.typescriptlang.org/favicon-32x32.png?v=8944a05a8b601855de116c8a56d3b3ae" alt="TypeScript Logo" width="32"></a>
 	<a href="https://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="32" alt="NestJS Logo" /></a>
 	<a href="https://www.solidjs.com/" target="blank"><img src="https://www.solidjs.com/img/logo/without-wordmark/logo.svg" width="32" alt="SolidJS Logo" /></a>
@@ -35,6 +38,28 @@ There may be more than one room manager, in this way the rooms will be spread ar
 The system works by executing Game Rooms in Room Manager machines/servers, these maintain rooms being executed and the players in them, they respond to the Server Manager, that maintains one or more Room Managers and the amount of games in them, trying to balance the load between them all.
 
 The users connect to the system via Web Application to play the game and via Desktop Application to start a new room, these than communicate via WebSockets/HTTP with the rooms to progess the game state.
+
+## Starting the system
+
+Start running the Room Managers (there may be more than one), you can start it with the following command in the NodeServers/room-manager directory:
+
+```bash
+$ npm run start
+```
+
+Whenever the Room Managers finished starting, you can run the Server Manager with the same command in the NodeServers/server-manager directory:
+
+```bash
+$ npm run start
+```
+
+The next system to start is the Web App, you also start it with the same command as the managers but in the WebClients/web directory:
+
+```bash
+$ npm run start
+```
+
+With these applications running the system is ready to be accessed. For more informations check the README in the directory of each system.
 
 ## How to make a game
 
@@ -245,7 +270,7 @@ Stylize it as you like, you can define colors and custom classes in the index.cs
 
 This system ties all the interfaces together, it acts as a server to store the game state and exchange message between all web apps and the unity app.
 
-The file for the room is written in Go and communicate with the web and unity via websocket or requests. To create a new game room, you should create a folder in the GoServers directory with the name of yourGame, then inside this folder all files related to that game. The default structure for the main file is:
+The file for the room is written in Go and communicate with the web and unity via websocket or requests. To create a new game room, you should create a folder in the GoServers directory with the name of yourGame, then inside this folder all files related to that game. Compile the yourGame file with `go build` and change it to an executable, this way the room manager can execute the code. The default structure for the main file is:
 
 ```go
 package main
@@ -334,7 +359,7 @@ func main() {
 }
 ```
 
-You can get users answer from the websocket and handle them inside `usersWebSocket` or you can add a POST handler for it, in the latter you should add a handler to the server using `gameServer.AddRoute("route", func)` and toggle it whenever you want to be able to receive data from users using `gameServer.ToggleRoute("route")`, this forces the server to only store answers whenever you toggle it.
+You can get users answer from the websocket and handle them inside `usersWebSocket` or you can add a POST handler for it, in the latter you should add a handler to the server using `gameServer.AddRoute("route", func)` and toggle it whenever you want to be able to receive data from users using `gameServer.ToggleRoute("route")`, this forces the server to only process the request whenever you toggle it.
 
 ##### Tying everything together
 
