@@ -121,8 +121,7 @@ public class MinPlusController : GameController
         }
         ShufflePictures();
 
-        Debug.Log(String.Format("{0}:{1}/createRoom", DotEnv.serverIp, DotEnv.serverPort));
-        UnityWebRequest req = new UnityWebRequest(String.Format("{0}:{1}/createRoom", DotEnv.serverIp, DotEnv.serverPort), "POST");
+        UnityWebRequest req = new UnityWebRequest(String.Format("{0}/manager/createRoom", DotEnv.serverIp), "POST");
         byte[] jsonToSend = System.Text.Encoding.UTF8.GetBytes("{\"game\": \"minplus\"}");
         req.uploadHandler = (UploadHandler)new UploadHandlerRaw(jsonToSend);
         req.downloadHandler = (DownloadHandler)new DownloadHandlerBuffer();
@@ -132,14 +131,16 @@ public class MinPlusController : GameController
 
         while (!operation.isDone) { }
 
-        if(req.result == UnityWebRequest.Result.ConnectionError){
-            Debug.Log("Error while sending: " + req.error);
+        if (req.result == UnityWebRequest.Result.ConnectionError)
+        {
             connectionTimer.text = "Não foi possível conectar.";
             exitPage.SetActive(true);
-        }else{
+        }
+        else
+        {
             room = GameRoom.CreateFromJSON(req.downloadHandler.text);
 
-            await createWS(String.Format("wss://{0}:{1}/unity", room._ip, room._port), wsDelegate);
+            await createWS(String.Format("wss://{0}/{1}/unity", room._ip, room._port), wsDelegate);
         }
 
         exitPage.GetComponent<Button>().onClick.AddListener(Exit);
@@ -160,7 +161,6 @@ public class MinPlusController : GameController
             if(startTimer <= 0){
                 if((gameState & MinPlusState.Waiting) != 0){
                     if(lastRound != currentRound){
-                        Debug.Log("Draw cards");
                         SendWSMessage("2"); // Draw players hands
                         lastRound++;
                     }
@@ -174,7 +174,6 @@ public class MinPlusController : GameController
                 }else if((gameState & MinPlusState.Playing) != 0){
                     if(revealCardTimer >= 8 && !playedCard){
                         playedCard = true;
-                        Debug.Log(cardsPlayed[playOrder[playing]][revealCardTimerTimes]);
                         Sprite sprite = Resources.Load<Sprite>(String.Format("Sprites/MinPlus/Cards/{0}", cardsPlayed[playOrder[playing]][revealCardTimerTimes]));
                         cardsPlay.transform.GetChild(revealCardTimerTimes+1).GetComponent<RawImage>().texture = sprite.texture;
                         cardsPlay.transform.GetChild(revealCardTimerTimes+1).gameObject.SetActive(true);
@@ -260,7 +259,8 @@ public class MinPlusController : GameController
     private async Task Quit()
     {
         if(room != null){
-            UnityWebRequest req = new UnityWebRequest(String.Format("{0}:{1}/room/{2}/end", DotEnv.serverIp, DotEnv.serverPort, room._code), "GET");
+            UnityWebRequest req = new UnityWebRequest(String.Format("{0}/room/{2}/end", DotEnv.serverIp, room._code), "GET");
+            // UnityWebRequest req = new UnityWebRequest(String.Format("{0}:{1}/room/{2}/end", DotEnv.serverIp, DotEnv.serverPort, room._code), "GET");
 
             UnityWebRequestAsyncOperation operation = req.SendWebRequest();
 
@@ -294,7 +294,6 @@ public class MinPlusController : GameController
     void WSCommunication(byte[] bytes)
     {
         var msg = System.Text.Encoding.UTF8.GetString(bytes);
-        Debug.Log(msg);
         string[] command = new string[3];
         command[0] = msg.Substring(0, 1);
         string order = "";
@@ -312,7 +311,8 @@ public class MinPlusController : GameController
                     order += String.Format("\n{0}: {1}", String.Format("{0}{1}", ((i > 8) ? "" : "0"), i+1), users[playOrder[i]].username);
                 }
                 playerOrder.text = order;
-                UnityWebRequest req = new UnityWebRequest(String.Format("{0}:{1}/room/{2}/start", DotEnv.serverIp, DotEnv.serverPort, room._code), "GET");
+                UnityWebRequest req = new UnityWebRequest(String.Format("{0}/room/{2}/start", DotEnv.serverIp, room._code), "GET");
+                // UnityWebRequest req = new UnityWebRequest(String.Format("{0}:{1}/room/{2}/start", DotEnv.serverIp, DotEnv.serverPort, room._code), "GET");
 
                 UnityWebRequestAsyncOperation operation = req.SendWebRequest();
 
@@ -326,16 +326,12 @@ public class MinPlusController : GameController
             case "2":
                 command[1] = msg.Substring(1, msg.Length - 2);
                 command[2] = msg.Substring(msg.Length - 1);
-                Debug.Log(command[1]);
-                Debug.Log(command[2]);
-                Debug.Log(usersPos.Count);
                 if(loginPage.activeSelf){
                     picturesIndex--;
                     users[command[2]] = new GameUser(command[2], command[1], pictures[picturesIndex]);
                     playOrder.Add(command[2]);
 
                     GameObject user = Instantiate(userLoginPrefab, usersPos[9-picturesIndex]) as GameObject;
-                    Debug.Log(user.name);
                     int userIdx = int.Parse(pictures[picturesIndex].Split('_')[1]);
                     Sprite sprite = Resources.LoadAll<Sprite>("Sprites/UserIcons")[userIdx];
                     user.transform.GetChild(0).gameObject.GetComponent<RawImage>().texture = sprite.texture;

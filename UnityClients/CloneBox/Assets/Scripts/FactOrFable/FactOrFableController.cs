@@ -80,7 +80,7 @@ public class FactOrFableController : GameController
         }
         ShufflePictures();
 
-        UnityWebRequest req = new UnityWebRequest(String.Format("{0}:{1}/createRoom", DotEnv.serverIp, DotEnv.serverPort), "POST");
+        UnityWebRequest req = new UnityWebRequest(String.Format("{0}/createRoom", DotEnv.serverIp), "POST");
         byte[] jsonToSend = System.Text.Encoding.UTF8.GetBytes("{\"game\": \"factorfable\"}");
         req.uploadHandler = (UploadHandler)new UploadHandlerRaw(jsonToSend);
         req.downloadHandler = (DownloadHandler)new DownloadHandlerBuffer();
@@ -91,13 +91,12 @@ public class FactOrFableController : GameController
         while(!operation.isDone){}
 
         if(req.result == UnityWebRequest.Result.ConnectionError){
-            Debug.Log("Error while sending: " + req.error);
             connectPage.transform.GetChild(0).GetComponent<TMP_Text>().text = "Não foi possível conectar.";
             exitPage.SetActive(true);
         }else{
             room = GameRoom.CreateFromJSON(req.downloadHandler.text);
 
-            await createWS(String.Format("wss://{0}:{1}/unity", room._ip, room._port), wsDelegate);
+            await createWS(String.Format("wss://{0}/{1}/unity", room._ip, room._port), wsDelegate);
         }
 
         exitPage.GetComponent<Button>().onClick.AddListener(Exit);
@@ -173,7 +172,8 @@ public class FactOrFableController : GameController
     private async Task Quit()
     {
         if(room != null){
-            UnityWebRequest req = new UnityWebRequest(String.Format("{0}:{1}/room/{2}/end", DotEnv.serverIp, DotEnv.serverPort, room._code), "GET");
+            UnityWebRequest req = new UnityWebRequest(String.Format("{0}/room/{2}/end", DotEnv.serverIp, room._code), "GET");
+            // UnityWebRequest req = new UnityWebRequest(String.Format("{0}:{1}/room/{2}/end", DotEnv.serverIp, DotEnv.serverPort, room._code), "GET");
 
             UnityWebRequestAsyncOperation operation = req.SendWebRequest();
 
@@ -229,8 +229,6 @@ public class FactOrFableController : GameController
 
     void WSCommunication(byte[] bytes){
         var msg = System.Text.Encoding.UTF8.GetString(bytes);
-        Debug.Log(msg);
-        // string[] command = msg.Split("-");
         string[] command = new string[3];
         command[0] = msg.Substring(0, 1);
         if(command[0] == "1" || command[0] == "2"){

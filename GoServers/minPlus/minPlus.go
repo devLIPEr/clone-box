@@ -2,6 +2,7 @@ package main
 
 import (
 	"GoServers/gameserver"
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -11,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -152,6 +154,10 @@ func unityWebSocket(msg string, server *gameserver.GameServer, params map[string
 			if err != nil {
 				log.Print(err)
 			}
+		}
+		time.Sleep(2 * time.Second)
+		if err := server.Server.Shutdown(context.Background()); err != nil {
+			panic(err) // failure/timeout shutting down the server gracefully
 		}
 	case "7":
 		err := server.UnityWS.WriteMessage(websocket.TextMessage, []byte("5"))
